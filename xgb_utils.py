@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-FEATURES = ['cofitness_cosub', 'cofitness_time_decay', 'num_appearance']
+FEATURES = ['cofitness_cosub', 'cofitness_time_decay', 'num_appearance', 'type_weight', 'coclick', 'cocart', 'coorder']
 USER_FEATURES = ['num_sub', 'consistency', 'num_actions', 'pr']
 ITEM_FEATURES = ['num_clicks', 'num_carts', 'num_orders', 'pr']
 # INTERACTION_FEATURES = ['user_clicks', 'user_carts', 'user_orders']
@@ -24,14 +24,17 @@ def create_data(infer_data, infer = True):
   data =  {
       'user': infer_data[:,0].astype(np.int32),
       'item': infer_data[:, 1].astype(np.int32),
-      'fitness_sub': infer_data[:,2].astype(float),
-      'fitness_time_decay': infer_data[:,3].astype(float),
-      'fitness_num_appeareance': infer_data[:,4].astype(np.uint16),
-      'type': infer_data[:,5].astype(np.uint16),
+      'type': infer_data[:,2].astype(np.uint16),
+
+      
   }
+
+  for f in FEATURES: 
+    data[f] = infer_data[:, len(data.keys())]
 
 
   aggs = ['mean', 'var']
+  
   
   for f in FEATURES:
     for agg in aggs: 
