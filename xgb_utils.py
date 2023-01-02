@@ -3,10 +3,19 @@ import pandas as pd
 
 FEATURES = ['cofitness_cosub', 'cofitness_time_decay', 'num_appearance', 'num_cosub', 'coclick', 'cocart', 'coorder']
 USER_FEATURES = ['num_sub', 'consistency', 'num_actions', 'pr']
-ITEM_FEATURES = ['num_clicks', 'num_carts', 'num_orders', 'pr']
-# INTERACTION_FEATURES = ['user_clicks', 'user_carts', 'user_orders']
+
+
+item_features = ['num_clicks', 'num_carts', 'num_orders', 'pr']
+recent_features = []
+for i in range(7,0,-1):
+    for j in range(3):
+        recent_features.append(f'recent_day{i}_type{j}')
+
+ITEM_FEATURES = [*item_features, * recent_features]
 
 INTERACTION_FEATURES = ['user_clicks', 'user_carts', 'user_orders', 'user_num_sub', 'user_time_decay', 'user_lts', 'user_fts']
+
+
 feature_id_map = {
   'num_sub' : 0,
   'consistency': 1,
@@ -17,40 +26,31 @@ feature_id_map = {
   'pr': 6,
 }
 
+recent_features_id_map = dict(zip(
+  recent_features, [len(feature_id_map) + i for i in range(len(recent_features))]
+))
+
+feature_id_map = {**feature_id_map, **recent_features_id_map}
+
 def create_data(infer_data, infer = True):
   
   aggs = ['mean', 'var']
   
   agg_features_name = []
   quo_features_name = []
-  prod_features_name = []
   
   for f in FEATURES:
     for agg in aggs: 
       agg_features_name.append(f + '_' + agg)
       quo_features_name.append('qou_' + f + '_' + agg)
       
-  for i in range(len(FEATURES)):
-    for j in range(i + 1, len(FEATURES)):
-      prod_features_name.append('prod_' + FEATURES[i] + '_' + FEATURES[j]) 
-  
-  columns = [
-              *FEATURES,
+  columns = ['user', 'item', 'type',
+             *FEATURES,
              *[f if f != 'pr' else 'item_pr' for f in ITEM_FEATURES],
              *quo_features_name,  
-             *prod_features_name,
-             ]
-  
-  
-
-  rank_features_name = ['rank_' + f for f in columns]
-  columns = ['user', 'item', 'type',*columns, 
-             *rank_features_name,
              *agg_features_name,
              *[f if f != 'pr' else 'user_pr' for f in USER_FEATURES],]
   
-
-
   assert len(columns) == infer_data.shape[1], (len(columns), infer_data.shape[1])
 
 
@@ -71,27 +71,17 @@ def create_data(infer_data, infer = True):
 
 def create_test_data(infer_data, infer = True):
 
-  data =  {
-      'user': infer_data[:,0].astype(np.int32),
-      'item': infer_data[:, 1].astype(np.int32),
-      'fitness': infer_data[:,2].astype(float),
-  }
 
-
-  for f in INTERACTION_FEATURES: 
-    data[f] = infer_data[:, len(data.keys())]
-
-
-  for f in USER_FEATURES: 
-    f = f if f != 'pr' else 'user_pr'
-    data[f] = infer_data[:, len(data.keys())]
-
-  for f in ITEM_FEATURES: 
-    f = f if f != 'pr' else 'item_pr'
-    data[f] = infer_data[:, len(data.keys())]
+    
+  columns = [
+    'user', 'item', 'fiteness', 
+    *INTERACTION_FEATURES,
+    *[f if f != 'pr' else 'user_pr' for f in USER_FEATURES],
+    *[f if f != 'pr' else 'item_pr' for f in ITEM_FEATURES],
+  ]
   
 
-  candidates = pd.DataFrame(data)
+  candidates = pd.DataFrame(data = infer_data, columns = columns, copy=False)
  
   if not infer:
     candidates ['item'] = candidates['item'] - 100000000
