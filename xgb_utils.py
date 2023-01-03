@@ -4,10 +4,10 @@ from utils import unshuffle
 import xgboost as xgb
 
 FEATURES = ['cofitness_cosub', 'cofitness_time_decay', 'num_appearance', 'num_cosub', 'coclick', 'cocart', 'coorder']
-USER_FEATURES = ['num_sub', 'consistency', 'num_actions', 'pr']
+USER_FEATURES = ['num_sub', 'consistency', 'num_actions', 'pr', 'recent_pr']
 
 
-item_features = ['num_clicks', 'num_carts', 'num_orders', 'pr']
+item_features = ['num_clicks', 'num_carts', 'num_orders', 'pr', 'recent_pr']
 recent_features = []
 for i in range(7,0,-1):
     for j in range(3):
@@ -26,6 +26,7 @@ feature_id_map = {
   'num_carts': 4, 
   'num_orders': 5,
   'pr': 6,
+  'recent_pr': 7,
 }
 
 recent_features_id_map = dict(zip(
@@ -49,10 +50,10 @@ def create_data(infer_data, infer = True):
       
   columns = ['user', 'item', 'type',
              *FEATURES,
-             *[f if f != 'pr' else 'item_pr' for f in ITEM_FEATURES],
+             *[f if 'pr' not in f else 'item_' + f for f in ITEM_FEATURES],
              *quo_features_name,  
              *agg_features_name,
-             *[f if f != 'pr' else 'user_pr' for f in USER_FEATURES],]
+             *[f if 'pr' not in f else 'user_' + f for f in USER_FEATURES],]
   
   assert len(columns) == infer_data.shape[1], (len(columns), infer_data.shape[1])
 
@@ -76,10 +77,10 @@ def create_test_data(infer_data, infer = True, max_session = None):
 
     
   columns = [
-    'user', 'item', 'fiteness', 
+    'user', 'item', 'fitness', 
     *INTERACTION_FEATURES,
-    *[f if f != 'pr' else 'user_pr' for f in USER_FEATURES],
-    *[f if f != 'pr' else 'item_pr' for f in ITEM_FEATURES],
+    *[f if 'pr' not in f else 'user_' + f for f in USER_FEATURES],
+    *[f if 'pr' not in f else 'item_' + f for f in ITEM_FEATURES],
   ]
   
 
