@@ -9,13 +9,11 @@ USER_FEATURES = ['num_sub', 'consistency', 'num_actions', 'pr']
 
 item_features = ['num_clicks', 'num_carts', 'num_orders', 'pr']
 recent_features = []
-dirty_features = []
 for i in range(7,0,-1):
     for j in range(3):
         recent_features.append(f'recent_day{i}_type{j}')
-        dirty_features.append(f'future_day{i}_type{j}')
 
-ITEM_FEATURES = [*item_features, * recent_features, * dirty_features]
+ITEM_FEATURES = [*item_features, * recent_features]
 
 INTERACTION_FEATURES = ['user_clicks', 'user_carts', 'user_orders', 'user_num_sub', 'user_time_decay', 'user_lts', 'user_fts']
 
@@ -34,12 +32,8 @@ recent_features_id_map = dict(zip(
   recent_features, [len(feature_id_map) + i for i in range(len(recent_features))]
 ))
 
-dirty_features_id_map = dict(zip(
-  dirty_features, [len(feature_id_map) + len(recent_features_id_map) + i for i in range(len(dirty_features))]
-))
 
-
-feature_id_map = {**feature_id_map, **recent_features_id_map, **dirty_features_id_map}
+feature_id_map = {**feature_id_map, **recent_features_id_map}
 
 def create_data(infer_data, infer = True):
   
