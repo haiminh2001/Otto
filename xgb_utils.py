@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+from utils import unshuffle
+import xgboost as xgb
 
 FEATURES = ['cofitness_cosub', 'cofitness_time_decay', 'num_appearance', 'num_cosub', 'coclick', 'cocart', 'coorder']
 USER_FEATURES = ['num_sub', 'consistency', 'num_actions', 'pr']
@@ -7,11 +9,13 @@ USER_FEATURES = ['num_sub', 'consistency', 'num_actions', 'pr']
 
 item_features = ['num_clicks', 'num_carts', 'num_orders', 'pr']
 recent_features = []
+dirty_features = []
 for i in range(7,0,-1):
     for j in range(3):
         recent_features.append(f'recent_day{i}_type{j}')
+        dirty_features.append(f'future_day{i}_type{j}')
 
-ITEM_FEATURES = [*item_features, * recent_features]
+ITEM_FEATURES = [*item_features, * recent_features, * dirty_features]
 
 INTERACTION_FEATURES = ['user_clicks', 'user_carts', 'user_orders', 'user_num_sub', 'user_time_decay', 'user_lts', 'user_fts']
 
@@ -30,7 +34,12 @@ recent_features_id_map = dict(zip(
   recent_features, [len(feature_id_map) + i for i in range(len(recent_features))]
 ))
 
-feature_id_map = {**feature_id_map, **recent_features_id_map}
+dirty_features_id_map = dict(zip(
+  dirty_features, [len(feature_id_map) + len(recent_features_id_map) + i for i in range(len(dirty_features))]
+))
+
+
+feature_id_map = {**feature_id_map, **recent_features_id_map, **dirty_features_id_map}
 
 def create_data(infer_data, infer = True):
   
@@ -63,13 +72,12 @@ def create_data(infer_data, infer = True):
     del candidates['type']
     return candidates, t
   else:
-    # candidates ['item'] = candidates['item'] - 100000000
     return candidates
 
 
 
 
-def create_test_data(infer_data, infer = True):
+def create_test_data(infer_data, infer = True, max_session = None):
 
 
     
@@ -84,7 +92,7 @@ def create_test_data(infer_data, infer = True):
   candidates = pd.DataFrame(data = infer_data, columns = columns, copy=False)
  
   if not infer:
-    candidates ['item'] = candidates['item'] - 100000000
+    candidates ['item'] = candidates['item'] - max_session
   return candidates
 
 
@@ -102,3 +110,50 @@ def get_len_group(idx, num_cands):
   assert np.sum(groups) == n, (np.sum(groups), n)
   return groups
 
+
+def xgboost_infer(infer_data, perm, models):
+  df_infer_data, np_type = create_data(infer_data)
+  preds = np.zeros(df_infer_data.shape[0])
+  dtest = xgb.DMatrix(data=df_infer_data.iloc[:, 2:])
+
+  for model in models:
+
+      preds += model.predict(dtest) / len(models)
+      
+  predictions = df_infer_data[['user','item']].copy()
+  predictions['type'] = np_type
+  predictions['pred'] = preds
+
+  predictions = predictions.sort_values(['user', 'pred'], ascending=[True, False]).reset_index(drop=True)
+  predictions['n'] = predictions.groupby('user').item.cumcount().astype('int8')
+  predictions = predictions.loc[predictions.n<20]
+  sub = predictions.groupby('user').item.apply(list)
+  sub = sub.to_frame().reset_index()
+  items = sub.item.values.tolist()
+  users = sub.user.values
+  unshuffle([items, users], perm)
+  return items, users
+
+
+def xgboost_test_infer(infer_data, perm, models):
+  df_infer_data = create_test_data(infer_data)
+  preds = np.zeros(df_infer_data.shape[0])
+  dtest = xgb.DMatrix(data=df_infer_data.iloc[:, 2:])
+
+  for model in models:
+
+      preds += model.predict(dtest) / len(models)
+      
+  predictions = df_infer_data[['user','item']].copy()
+  predictions['pred'] = preds
+
+  predictions = predictions.sort_values(['user', 'pred'], ascending=[True, False]).reset_index(drop=True)
+  predictions['n'] = predictions.groupby('user').item.cumcount().astype('int8')
+  predictions = predictions.loc[predictions.n<20]
+  sub = predictions.groupby('user').item.apply(list)
+  sub = sub.to_frame().reset_index()
+  items = sub.item.values.tolist()
+  users = sub.user.values
+  unshuffle([items, users], perm)
+  return items, users
+    
