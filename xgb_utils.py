@@ -3,20 +3,34 @@ import pandas as pd
 from utils import unshuffle
 import xgboost as xgb
 
+#need to careful distribution when 3 -> 4 weeks in train
+#all sub, appearance, click, cart, order, degree lts fts
+
+
+
+#list all features
 FEATURES = ['cofitness_cosub', 'cofitness_time_decay', 'num_appearance', 'num_cosub', 'coclick', 'cocart', 'coorder']
-USER_FEATURES = ['num_sub', 'consistency', 'num_actions', 'pr', 'recent_pr']
+USER_FEATURES = ['num_sub', 'consistency', 'num_actions', 'pr', 'recent_pr', 'degree']
 
 
-item_features = ['num_clicks', 'num_carts', 'num_orders', 'pr', 'recent_pr']
+item_features = ['num_clicks', 'num_carts', 'num_orders', 'pr', 'recent_pr', 'degree']
 recent_features = []
+glob_features = ['item_glob_' + f for f in[
+    'last_action', 'first_action', 
+    'time_decay_sum', 'time_decay_sum_click', 
+    'time_decay_sum_cart', 'time_decay_sum_order', 'item_glob_durability'
+]]
+
+
 for i in range(7,0,-1):
     for j in range(3):
         recent_features.append(f'recent_day{i}_type{j}')
 
-ITEM_FEATURES = [*item_features, * recent_features]
+ITEM_FEATURES = [*item_features, * recent_features, *glob_features]
 
-INTERACTION_FEATURES = ['user_clicks', 'user_carts', 'user_orders', 'user_num_sub', 'user_time_decay', 'user_lts', 'user_fts']
+INTERACTION_FEATURES = ['inter_clicks', 'inter_carts', 'inter_orders', 'inter_num_sub', 'inter_time_decay', 'inter_lts', 'inter_fts', 'inter_durability', 'inter_num_interacts']
 
+shared_features = ['pr', 'recent_pr', 'degree']
 
 feature_id_map = {
   'num_sub' : 0,
@@ -25,35 +39,60 @@ feature_id_map = {
   'num_clicks': 3,
   'num_carts': 4, 
   'num_orders': 5,
-  'pr': 6,
-  'recent_pr': 7,
+  'degree': 6,
+  'pr': 7,
+  'recent_pr': 8,
 }
 
 recent_features_id_map = dict(zip(
   recent_features, [len(feature_id_map) + i for i in range(len(recent_features))]
 ))
 
+glob_features_id_map = dict(zip(
+  glob_features, [len(feature_id_map) + len(recent_features_id_map) + i for i in range(len(glob_features))]
+))
 
-feature_id_map = {**feature_id_map, **recent_features_id_map}
+
+feature_id_map = {**feature_id_map, **recent_features_id_map, **glob_features_id_map}
+
+
+
+aggs = ['mean', 'var']
+
+agg_features_name = []
+quo_features_name = []
+
+for f in FEATURES:
+  for agg in aggs: 
+    agg_features_name.append(f + '_' + agg)
+    quo_features_name.append('qou_' + f + '_' + agg)
+
+
+
+columns = ['user', 'item', 'type',
+            
+            
+            
+            *FEATURES,
+            *[f if f not in shared_features else 'item_' + f for f in ITEM_FEATURES],
+            *quo_features_name,  
+            *agg_features_name,
+            *[f if f not in shared_features else 'user_' + f for f in USER_FEATURES],]
+
+
+
+test_columns = [
+    'user', 'item', 'fitness', 
+    *INTERACTION_FEATURES,
+    *[f if f not in shared_features else 'user_' + f for f in USER_FEATURES],
+    *[f if f not in shared_features else 'item_' + f for f in ITEM_FEATURES],
+  ]
 
 def create_data(infer_data, infer = True):
   
-  aggs = ['mean', 'var']
-  
-  agg_features_name = []
-  quo_features_name = []
-  
-  for f in FEATURES:
-    for agg in aggs: 
-      agg_features_name.append(f + '_' + agg)
-      quo_features_name.append('qou_' + f + '_' + agg)
+
       
-  columns = ['user', 'item', 'type',
-             *FEATURES,
-             *[f if 'pr' not in f else 'item_' + f for f in ITEM_FEATURES],
-             *quo_features_name,  
-             *agg_features_name,
-             *[f if 'pr' not in f else 'user_' + f for f in USER_FEATURES],]
+
   
   assert len(columns) == infer_data.shape[1], (len(columns), infer_data.shape[1])
 
@@ -75,16 +114,10 @@ def create_data(infer_data, infer = True):
 def create_test_data(infer_data, infer = True, max_session = None):
 
 
-    
-  columns = [
-    'user', 'item', 'fitness', 
-    *INTERACTION_FEATURES,
-    *[f if 'pr' not in f else 'user_' + f for f in USER_FEATURES],
-    *[f if 'pr' not in f else 'item_' + f for f in ITEM_FEATURES],
-  ]
+
   
 
-  candidates = pd.DataFrame(data = infer_data, columns = columns, copy=False)
+  candidates = pd.DataFrame(data = infer_data, columns = test_columns, copy=False)
  
   if not infer:
     candidates ['item'] = candidates['item'] - max_session

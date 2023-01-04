@@ -162,3 +162,5 @@ cython_debug/
 *.parquet
 *.csv
 *.array
+*.code-workspace
+*.png
