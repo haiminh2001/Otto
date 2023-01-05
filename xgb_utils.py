@@ -10,10 +10,10 @@ import xgboost as xgb
 
 #list all features
 FEATURES = ['cofitness_cosub', 'cofitness_time_decay', 'num_appearance', 'num_cosub', 'coclick', 'cocart', 'coorder']
-USER_FEATURES = ['num_sub', 'consistency', 'num_actions', 'pr', 'recent_pr', 'degree']
+USER_FEATURES = ['num_sub', 'consistency', 'num_actions', 'degree', 'pr', 'recent_degree', 'recent_pr']
 
 
-item_features = ['num_clicks', 'num_carts', 'num_orders', 'pr', 'recent_pr', 'degree']
+item_features = ['num_clicks', 'num_carts', 'num_orders', 'degree', 'pr', 'recent_num_clicks', 'recent_num_carts', 'recent_num_orders', 'recent_degree', 'recent_pr']
 recent_features = []
 glob_features = ['item_glob_' + f for f in[
     'last_action', 'first_action', 
@@ -30,7 +30,7 @@ ITEM_FEATURES = [*item_features, * recent_features, *glob_features]
 
 INTERACTION_FEATURES = ['inter_clicks', 'inter_carts', 'inter_orders', 'inter_num_sub', 'inter_time_decay', 'inter_lts', 'inter_fts', 'inter_durability', 'inter_num_interacts']
 
-shared_features = ['pr', 'recent_pr', 'degree']
+shared_features = ['pr', 'recent_pr', 'degree', 'recent_degree']
 
 feature_id_map = {
   'num_sub' : 0,
@@ -41,7 +41,11 @@ feature_id_map = {
   'num_orders': 5,
   'degree': 6,
   'pr': 7,
-  'recent_pr': 8,
+  'recent_num_clicks': 8,
+  'recent_num_carts': 9, 
+  'recent_num_orders': 10,
+  'recent_degree': 11,
+  'recent_pr': 12,
 }
 
 recent_features_id_map = dict(zip(
