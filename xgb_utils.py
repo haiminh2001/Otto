@@ -21,6 +21,7 @@ glob_features = ['item_glob_' + f for f in[
     'time_decay_sum_cart', 'time_decay_sum_order', 'item_glob_durability'
 ]]
 
+popular_features = ['popular_clicks', 'popular_carts', 'popular_orders', 'popular_num_appearance']
 
 for i in range(7,0,-1):
     for j in range(3):
@@ -79,6 +80,7 @@ columns = ['user', 'item', 'type',
             
             *FEATURES,
             *[f if f not in shared_features else 'item_' + f for f in ITEM_FEATURES],
+            *popular_features,
             *quo_features_name,  
             *agg_features_name,
             *[f if f not in shared_features else 'user_' + f for f in USER_FEATURES],]
