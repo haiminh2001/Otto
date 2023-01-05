@@ -146,11 +146,11 @@ def get_len_group(idx, num_cands):
 def xgboost_infer(infer_data, perm, models):
   df_infer_data, np_type = create_data(infer_data)
   preds = np.zeros(df_infer_data.shape[0])
-  dtest = xgb.DMatrix(data=df_infer_data.iloc[:, 2:])
+  dtest = xgb.DMatrix(data=df_infer_data.iloc[:, 2: -3])
 
   for model in models:
 
-      preds += model.predict(dtest) / len(models)
+      preds += model.predict(dtest, iteration_range=(0, model.best_ntree_limit)) / len(models)
       
   predictions = df_infer_data[['user','item']].copy()
   predictions['type'] = np_type
@@ -171,10 +171,12 @@ def xgboost_test_infer(infer_data, perm, models):
   df_infer_data = create_test_data(infer_data)
   preds = np.zeros(df_infer_data.shape[0])
   dtest = xgb.DMatrix(data=df_infer_data.iloc[:, 2:])
+  for c in ['clicks', 'carts', 'orders']:
+    assert c not in df_infer_data.columns[2:]
 
   for model in models:
 
-      preds += model.predict(dtest) / len(models)
+      preds += model.predict(dtest, iteration_range=(0, model.best_ntree_limit)) / len(models)
       
   predictions = df_infer_data[['user','item']].copy()
   predictions['pred'] = preds
