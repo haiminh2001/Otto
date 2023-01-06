@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-def get_score(df, session_list, split = False):
+def get_score(df, session_list, split = False, n = 20):
     submission = df.copy()
     test_labels = pd.read_parquet('/home/anhphantq/otto/splitted_data/test_labels.parquet')
     test_labels = test_labels[(test_labels['session'] <= np.amax(session_list)) & (test_labels['session'] >= np.amin(session_list))]
@@ -15,10 +15,14 @@ def get_score(df, session_list, split = False):
     submission['type'] = submission.session_type.apply(lambda x: x.split('_')[1])
     
     if split:
-      submission.labels = submission.labels.apply(lambda x: [int(i) for i in x.split(' ')[:20]])
+      submission.labels = submission.labels.apply(lambda x: [int(i) for i in x.split(' ')[:n]])
+    else:
+      submission.labels = submission.labels.apply(lambda x: x[:n])
+
+      
 
     test_labels = test_labels.merge(submission, how='left', on=['session', 'type'])
-    test_labels['hits'] = test_labels.apply(lambda df: len(set(df.ground_truth).intersection(set(df.labels))), axis=1)
+    test_labels['hits'] = test_labels.apply(lambda x: len(set(x.ground_truth).intersection(set(x.labels))), axis=1)
     test_labels['gt_count'] = test_labels.ground_truth.str.len().clip(0,20)
 
     del submission
