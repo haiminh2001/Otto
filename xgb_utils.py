@@ -31,6 +31,12 @@ ITEM_FEATURES = [*item_features, * recent_features, *glob_features]
 
 INTERACTION_FEATURES = ['inter_clicks', 'inter_carts', 'inter_orders', 'inter_num_sub', 'inter_time_decay', 'inter_lts', 'inter_fts', 'inter_durability', 'inter_num_interacts']
 
+RECENT_INTERACT_FEATURES = []
+
+for i in range(7,0,-1):
+    for j in range(3):
+        RECENT_INTERACT_FEATURES.append(f'recent_inter_day{i}_type{j}')
+
 shared_features = ['pr', 'recent_pr', 'degree', 'recent_degree']
 
 feature_id_map = {
@@ -92,6 +98,7 @@ test_columns = [
     *INTERACTION_FEATURES,
     *[f if f not in shared_features else 'user_' + f for f in USER_FEATURES],
     *[f if f not in shared_features else 'item_' + f for f in ITEM_FEATURES],
+    *RECENT_INTERACT_FEATURES,
   ]
 
 def create_data(infer_data, infer = True):
