@@ -9,7 +9,7 @@ import xgboost as xgb
 
 
 #list all features
-FEATURES = ['cofitness_cosub', 'cofitness_time_decay', 'num_appearance', 'num_cosub', 'coclick', 'cocart', 'coorder']
+FEATURES = ['cofitness_cosub', 'cofitness_time_decay', 'num_cosub', 'coclick', 'cocart', 'coorder', 'num_appearance']
 USER_FEATURES = ['num_sub', 'consistency', 'num_actions', 'degree', 'pr', 'recent_degree', 'recent_pr']
 
 
@@ -68,28 +68,27 @@ feature_id_map = {**feature_id_map, **recent_features_id_map, **glob_features_id
 
 
 
-aggs = ['mean', 'var']
-
-agg_features_name = []
-quo_features_name = []
+norm_features_name = []
 
 for f in FEATURES:
-  for agg in aggs: 
-    agg_features_name.append(f + '_' + agg)
-    quo_features_name.append('qou_' + f + '_' + agg)
+  norm_features_name.append('qou_' + f + '_mean' )
+  norm_features_name.append('standardized_' + f)
 
+qou_features_name = []
+for  f in FEATURES:
+  qou_features_name.append('qou_' + f + '_sqrt_num_cousers')
 
+for  f in popular_features:
+  qou_features_name.append('qou_' + f + '_sqrt_num_neighbourhood')
 
 columns = ['user', 'item', 'type',
-            
-            
-            
-            *FEATURES,
             *[f if f not in shared_features else 'item_' + f for f in ITEM_FEATURES],
             *popular_features,
-            *quo_features_name,  
-            *agg_features_name,
-            *[f if f not in shared_features else 'user_' + f for f in USER_FEATURES],]
+            *norm_features_name,  
+            *qou_features_name,
+            *[f if f not in shared_features else 'user_' + f for f in USER_FEATURES],
+            "num_couser_edges", 'num_cousers'
+            ]
 
 
 
