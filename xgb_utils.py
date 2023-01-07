@@ -124,11 +124,6 @@ def create_data(infer_data, infer = True):
 
 
 def create_test_data(infer_data, infer = True, max_session = None):
-
-
-
-  
-
   candidates = pd.DataFrame(data = infer_data, columns = test_columns, copy=False)
  
   if not infer:
