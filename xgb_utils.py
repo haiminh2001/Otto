@@ -3,13 +3,14 @@ import pandas as pd
 from utils import unshuffle
 import xgboost as xgb
 
-#need to careful distribution when 3 -> 4 weeks in train
-#all sub, appearance, click, cart, order, degree lts fts
 
 
 
 #list all features
-FEATURES = ['cofitness_cosub', 'cofitness_time_decay', 'num_cosub', 'coclick', 'cocart', 'coorder', 'num_appearance']
+FEATURES = ['num_cosub',
+            'coclick_sub_coef', 'cocart_sub_coef', 'coorder_sub_coef',
+            'coclick_time_decay', 'cocart_time_decay', 'coorder_time_decay',
+            'num_appearance']
 USER_FEATURES = ['num_sub', 'consistency', 'num_actions', 'degree', 'pr', 'recent_degree', 'recent_pr']
 
 
@@ -81,55 +82,32 @@ for  f in FEATURES:
 for  f in popular_features:
   qou_features_name.append('qou_' + f + '_sqrt_num_neighbourhood')
 
-columns = ['user', 'item', 'type',
+
+level2_columns = ['user', 'item', 
             *[f if f not in shared_features else 'item_' + f for f in ITEM_FEATURES],
             *popular_features,
             *norm_features_name,  
             *qou_features_name,
             *[f if f not in shared_features else 'user_' + f for f in USER_FEATURES],
-            "num_couser_edges", 'num_cousers'
             ]
 
-
-
-test_columns = [
-    'user', 'item', 'fitness', 
+level1_columns = [
+    'item', 'fitness', 
     *INTERACTION_FEATURES,
-    *[f if f not in shared_features else 'user_' + f for f in USER_FEATURES],
-    *[f if f not in shared_features else 'item_' + f for f in ITEM_FEATURES],
     *RECENT_INTERACT_FEATURES,
+    'is_level1',
   ]
 
-def create_data(infer_data, infer = True):
+def create_level2_data(infer_data):
   
-
-      
-
-  
-  assert len(columns) == infer_data.shape[1], (len(columns), infer_data.shape[1])
-
-
-  candidates = pd.DataFrame(data = infer_data, columns = columns, copy=False)
-  candidates['clicks'] = np.where(candidates['type'] == 0, 1, 0)
-  candidates['carts'] = np.where(candidates['type'] == 1, 1, 0)
-  candidates['orders'] = np.where(candidates['type'] == 2, 1, 0)
-  if infer:
-    t =  candidates['type'].values
-    del candidates['type']
-    return candidates, t
-  else:
-    return candidates
-
-
-
-
-def create_test_data(infer_data, infer = True, max_session = None):
-  candidates = pd.DataFrame(data = infer_data, columns = test_columns, copy=False)
- 
-  if not infer:
-    candidates ['item'] = candidates['item'] - max_session
+  assert len(level2_columns) == infer_data.shape[1], (len(level2_columns), infer_data.shape[1])
+  candidates = pd.DataFrame(data = infer_data, columns = level2_columns, copy=False)
   return candidates
 
+
+def create_level1_data(infer_data):
+  candidates = pd.DataFrame(data = infer_data, columns = level1_columns, copy=False)
+  return candidates
 
 def get_len_group(idx, num_cands):
   groups = []
@@ -146,37 +124,10 @@ def get_len_group(idx, num_cands):
   return groups
 
 
-def xgboost_infer(infer_data, perm, models):
-  df_infer_data, np_type = create_data(infer_data)
+def alpha_xgboost_infer(df_infer_data, models, perm):
+
   preds = np.zeros(df_infer_data.shape[0])
-  dtest = xgb.DMatrix(data=df_infer_data.iloc[:, 2: -3])
-
-  for model in models:
-
-      preds += model.predict(dtest, iteration_range=(0, model.best_ntree_limit)) / len(models)
-      
-  predictions = df_infer_data[['user','item']].copy()
-  predictions['type'] = np_type
-  predictions['pred'] = preds
-
-  predictions = predictions.sort_values(['user', 'pred'], ascending=[True, False]).reset_index(drop=True)
-  predictions['n'] = predictions.groupby('user').item.cumcount().astype('int8')
-  predictions = predictions.loc[predictions.n<20]
-  sub = predictions.groupby('user').item.apply(list)
-  sub = sub.to_frame().reset_index()
-  items = sub.item.values.tolist()
-  users = sub.user.values
-  unshuffle([items, users], perm)
-  return items, users
-
-
-def xgboost_test_infer(infer_data, perm, models):
-  df_infer_data = create_test_data(infer_data)
-  preds = np.zeros(df_infer_data.shape[0])
-  dtest = xgb.DMatrix(data=df_infer_data.iloc[:, 2:])
-  for c in ['clicks', 'carts', 'orders']:
-    assert c not in df_infer_data.columns[2:]
-
+  dtest = xgb.DMatrix(data=df_infer_data.iloc[:, 2: ])
   for model in models:
 
       preds += model.predict(dtest, iteration_range=(0, model.best_ntree_limit)) / len(models)
@@ -193,4 +144,3 @@ def xgboost_test_infer(infer_data, perm, models):
   users = sub.user.values
   unshuffle([items, users], perm)
   return items, users
-    
