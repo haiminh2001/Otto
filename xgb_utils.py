@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from utils import unshuffle
 import xgboost as xgb
+from itertools import permutations
 
 
 
@@ -15,7 +16,6 @@ USER_FEATURES = ['num_sub', 'consistency', 'num_actions', 'degree', 'pr', 'recen
 
 
 item_features = ['num_clicks', 'num_carts', 'num_orders', 'degree', 'pr', 'recent_num_clicks', 'recent_num_carts', 'recent_num_orders', 'recent_degree', 'recent_pr']
-recent_features = []
 glob_features = ['item_glob_' + f for f in[
     'last_action', 'first_action', 
     'time_decay_sum', 'time_decay_sum_click', 
@@ -24,9 +24,31 @@ glob_features = ['item_glob_' + f for f in[
 
 popular_features = ['popular_clicks', 'popular_carts', 'popular_orders', 'popular_num_appearance']
 
+
+lincom_features_name = []
+
+lincom_weights = list(permutations([1,3,6]))
+
+for w1, w2, w3 in lincom_weights:
+  lincom_features_name.extend([f'lincom_sub_coef_{w1}_{w2}_{w3}',
+                                f'lincom_time_decay_{w1}_{w2}_{w3}',
+                                ])
+
+lincom_recent_features_name = []
+
+recent_features = []
+
 for i in range(7,0,-1):
-    for j in range(3):
-        recent_features.append(f'recent_day{i}_type{j}')
+  for j in range(3):
+      recent_features.append(f'recent_day{i}_type{j}')
+      
+  for w1, w2, w3 in lincom_weights:
+    lincom_recent_features_name.append(f'lincom_recent_day_{i}_{w1}_{w2}_{w3}')
+          
+        
+
+
+
 
 ITEM_FEATURES = [*item_features, * recent_features, *glob_features]
 
@@ -56,6 +78,8 @@ feature_id_map = {
   'recent_pr': 12,
 }
 
+
+
 recent_features_id_map = dict(zip(
   recent_features, [len(feature_id_map) + i for i in range(len(recent_features))]
 ))
@@ -65,15 +89,16 @@ glob_features_id_map = dict(zip(
 ))
 
 
+index_recent_features = (len(feature_id_map), len(feature_id_map) + len(recent_features_id_map))
+
 feature_id_map = {**feature_id_map, **recent_features_id_map, **glob_features_id_map}
 
 
 
 norm_features_name = []
 
-for f in FEATURES:
+for f in FEATURES + lincom_features_name:
   norm_features_name.append('qou_' + f + '_mean' )
-  norm_features_name.append('standardized_' + f)
 
 qou_features_name = []
 for  f in FEATURES:
@@ -89,6 +114,7 @@ level2_columns = ['user', 'item',
             *norm_features_name,  
             *qou_features_name,
             *[f if f not in shared_features else 'user_' + f for f in USER_FEATURES],
+            *lincom_recent_features_name,
             ]
 
 level1_columns = [
@@ -136,8 +162,9 @@ def alpha_xgboost_infer(df_infer_data, models, perm):
   predictions['pred'] = preds
 
   predictions = predictions.sort_values(['user', 'pred'], ascending=[True, False]).reset_index(drop=True)
-  predictions['n'] = predictions.groupby('user').item.cumcount().astype('int8')
+  predictions['n'] = predictions.groupby('user').item.cumcount()
   predictions = predictions.loc[predictions.n<20]
+
   sub = predictions.groupby('user').item.apply(list)
   sub = sub.to_frame().reset_index()
   items = sub.item.values.tolist()
