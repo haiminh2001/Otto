@@ -1,3 +1,4 @@
+
 import numpy as np
 import pandas as pd
 from utils import unshuffle
@@ -104,13 +105,13 @@ qou_features_name = []
 for  f in FEATURES:
   qou_features_name.append('qou_' + f + '_sqrt_num_cousers')
 
-# for  f in popular_features:
-#   qou_features_name.append('qou_' + f + '_sqrt_num_neighbourhood')
+for  f in popular_features:
+  qou_features_name.append('qou_' + f + '_sqrt_num_neighbourhood')
 
 
 level2_columns = ['user', 'item', 
             *[f if f not in shared_features else 'item_' + f for f in ITEM_FEATURES],
-            # *popular_features,
+            *popular_features,
             *norm_features_name,  
             *qou_features_name,
             *[f if f not in shared_features else 'user_' + f for f in USER_FEATURES],
