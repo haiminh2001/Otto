@@ -7,7 +7,6 @@ from itertools import permutations
 
 
 
-
 #list all features
 FEATURES = ['num_cosub',
             'coclick_sub_coef', 'cocart_sub_coef', 'coorder_sub_coef',
@@ -105,13 +104,13 @@ qou_features_name = []
 for  f in FEATURES:
   qou_features_name.append('qou_' + f + '_sqrt_num_cousers')
 
-for  f in popular_features:
-  qou_features_name.append('qou_' + f + '_sqrt_num_neighbourhood')
+# for  f in popular_features:
+#   qou_features_name.append('qou_' + f + '_sqrt_num_neighbourhood')
 
 
-level2_columns = ['user', 'item', 
+level2_columns = ['item', 
             *[f if f not in shared_features else 'item_' + f for f in ITEM_FEATURES],
-            *popular_features,
+            # *popular_features,
             *norm_features_name,  
             *qou_features_name,
             *[f if f not in shared_features else 'user_' + f for f in USER_FEATURES],
