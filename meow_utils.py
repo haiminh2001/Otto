@@ -2,7 +2,7 @@
 import numpy as np
 import pandas as pd
 from utils import unshuffle
-import xgboost as xgb
+from catboost import Pool 
 from itertools import permutations
 
 
@@ -110,7 +110,6 @@ for  f in FEATURES:
 
 level2_columns = ['item', 
             *[f if f not in shared_features else 'item_' + f for f in ITEM_FEATURES],
-            # *popular_features,
             *norm_features_name,  
             *qou_features_name,
             *[f if f not in shared_features else 'user_' + f for f in USER_FEATURES],
@@ -153,10 +152,10 @@ def get_len_group(idx, num_cands):
 def alpha_Meow_infer(df_infer_data, models, perm):
 
   preds = np.zeros(df_infer_data.shape[0])
-  dtest = xgb.DMatrix(data=df_infer_data.iloc[:, 2: ])
+
   for model in models:
 
-      preds += model.predict(dtest, iteration_range=(0, model.best_ntree_limit)) / len(models)
+      preds += model.predict(df_infer_data.iloc[:, 2: ])
       
   predictions = df_infer_data[['user','item']].copy()
   predictions['pred'] = preds
