@@ -150,7 +150,7 @@ def get_len_group(idx, num_cands):
   return groups
 
 
-def alpha_xgboost_infer(df_infer_data, models, perm):
+def alpha_Meow_infer(df_infer_data, models, perm):
 
   preds = np.zeros(df_infer_data.shape[0])
   dtest = xgb.DMatrix(data=df_infer_data.iloc[:, 2: ])
