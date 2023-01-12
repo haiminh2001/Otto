@@ -2,10 +2,9 @@
 import numpy as np
 import pandas as pd
 from utils import unshuffle
-from catboost import Pool 
 from itertools import permutations
-
-
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 #list all features
 FEATURES = ['num_cosub',
@@ -170,3 +169,9 @@ def alpha_Meow_infer(df_infer_data, models, perm):
   users = sub.user.values
   unshuffle([items, users], perm)
   return items, users
+
+def plot_importance(featuer_names, feature_importances, ax):
+  df = pd.DataFrame({'feature':featuer_names, 'importance': feature_importances})
+  df = df[df['importance'] != 0].sort_values('importance')
+  return sns.barplot(data= df, x='importance', y='feature', ax = ax)
+
