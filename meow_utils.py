@@ -148,20 +148,20 @@ def get_len_group(idx, num_cands):
   return groups
 
 
-def alpha_Meow_infer(df_infer_data, models, perm):
+def alpha_Meow_infer(df_infer_data, models, perm, top = 20):
 
   preds = np.zeros(df_infer_data.shape[0])
 
   for model in models:
 
-      preds += model.predict(df_infer_data.iloc[:, 2: ])
+      preds += model.predict(df_infer_data.iloc[:, 2: ], thread_count = 1)
       
   predictions = df_infer_data[['user','item']].copy()
   predictions['pred'] = preds
 
   predictions = predictions.sort_values(['user', 'pred'], ascending=[True, False]).reset_index(drop=True)
   predictions['n'] = predictions.groupby('user').item.cumcount()
-  predictions = predictions.loc[predictions.n<20]
+  predictions = predictions.loc[predictions.n<top]
 
   sub = predictions.groupby('user').item.apply(list)
   sub = sub.to_frame().reset_index()
