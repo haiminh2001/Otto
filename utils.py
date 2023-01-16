@@ -22,7 +22,7 @@ def get_score(df, session_list, split = False, n = 20):
       
 
     test_labels = test_labels.merge(submission, how='left', on=['session', 'type'])
-    test_labels['hits'] = test_labels.apply(lambda x: len(set(x.ground_truth).intersection(set(x.labels))), axis=1)
+    test_labels['hits'] = test_labels.apply(lambda x: len(set(x.ground_truth).intersection(set(x.labels))), axis=1).clip(0, 20)
     test_labels['gt_count'] = test_labels.ground_truth.str.len().clip(0,20)
 
     del submission
@@ -32,6 +32,37 @@ def get_score(df, session_list, split = False, n = 20):
     print (f"Score : {(recall_per_type * pd.Series({'clicks': 0.10, 'carts': 0.30, 'orders': 0.60})).sum()}")
     return recall_per_type
 
+def get_recall20(df, session_list, split = False, n = 20):
+    submission = df.copy()
+    test_labels = pd.read_parquet('/home/anhphantq/otto/splitted_data/test_labels.parquet')
+    test_labels = test_labels[(test_labels['session'] <= np.amax(session_list)) & (test_labels['session'] >= np.amin(session_list))]
+    print(test_labels.columns)
+    submission['session'] = submission.session_type.apply(lambda x: int(x.split('_')[0]))
+    
+    session = set(test_labels['session'].unique().tolist())
+    for j in session_list:
+      assert j in session
+
+
+    submission['type'] = submission.session_type.apply(lambda x: x.split('_')[1])
+    
+    if split:
+      submission.labels = submission.labels.apply(lambda x: [int(i) for i in x.split(' ')[:n]])
+    else:
+      submission.labels = submission.labels.apply(lambda x: x[:n])
+
+      
+
+    test_labels = test_labels.merge(submission, how='left', on=['session', 'type'])
+    test_labels['hits'] = test_labels.apply(lambda x: len(set(x.ground_truth).intersection(set(x.labels))), axis=1).clip(0, 20)
+    test_labels['gt_count'] = test_labels.ground_truth.str.len().clip(0,20)
+
+    del submission
+    test_labels['recall'] = (test_labels['hits'] / test_labels['gt_count'])
+    recall_per_type = test_labels.groupby(['type'])['recall'].mean()
+
+    # print (f"Score : {(recall_per_type * pd.Series({'clicks': 0.10, 'carts': 0.30, 'orders': 0.60})).sum()}")
+    return recall_per_type, test_labels
 
 def shuffle(l):  
     perm = np.random.permutation(len(l))  
