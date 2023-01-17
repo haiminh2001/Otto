@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 from utils import unshuffle
 from itertools import permutations
-import matplotlib.pyplot as plt
 import seaborn as sns
 
 #list all features
@@ -26,14 +25,13 @@ popular_features = ['popular_clicks', 'popular_carts', 'popular_orders', 'popula
 
 lincom_features_name = []
 
-lincom_weights = list(permutations([1,3,10]))
+lincom_weights = list(permutations([1,3,10])) + [[0.5, 10, 0.5], [10, 0.5, 0.5], [0.5, 0.5, 10]]
 
 for w1, w2, w3 in lincom_weights:
   lincom_features_name.extend([f'lincom_sub_coef_{w1}_{w2}_{w3}',
                                 f'lincom_time_decay_{w1}_{w2}_{w3}',
                                 ])
 
-lincom_recent_features_name = []
 
 recent_features = []
 
@@ -41,23 +39,13 @@ for i in range(7,0,-1):
   for j in range(3):
       recent_features.append(f'recent_day{i}_type{j}')
       
-  for w1, w2, w3 in lincom_weights:
-    lincom_recent_features_name.append(f'lincom_recent_day_{i}_{w1}_{w2}_{w3}')
-          
-        
-
-
 
 
 ITEM_FEATURES = [*item_features, * recent_features, *glob_features]
 
 INTERACTION_FEATURES = ['inter_clicks', 'inter_carts', 'inter_orders', 'inter_num_sub', 'inter_time_decay', 'inter_lts', 'inter_fts', 'inter_durability', 'inter_num_interacts']
 
-RECENT_INTERACT_FEATURES = []
 
-for i in range(7,0,-1):
-    for j in range(3):
-        RECENT_INTERACT_FEATURES.append(f'recent_inter_day{i}_type{j}')
 
 shared_features = ['pr', 'recent_pr', 'degree', 'recent_degree']
 
@@ -112,13 +100,11 @@ level2_columns = ['item',
             *norm_features_name,  
             *qou_features_name,
             *[f if f not in shared_features else 'user_' + f for f in USER_FEATURES],
-            *lincom_recent_features_name,
             ]
 
 level1_columns = [
     'item', 'fitness', 
     *INTERACTION_FEATURES,
-    *RECENT_INTERACT_FEATURES,
     'is_level1',
   ]
 
@@ -132,6 +118,12 @@ def create_level2_data(infer_data):
 def create_level1_data(infer_data):
   candidates = pd.DataFrame(data = infer_data, columns = level1_columns, copy=False)
   return candidates
+
+def sigmoid(x):
+    return np.where(x >= 0, 
+                    1 / (1 + np.exp(-x)), 
+                    np.exp(x) / (1 + np.exp(x)))
+
 
 def get_len_group(idx, num_cands):
   groups = []
@@ -168,7 +160,7 @@ def alpha_Meow_infer(df_infer_data, models, perm, top = 20):
   items = sub.item.values.tolist()
   users = sub.user.values
   unshuffle([items, users], perm)
-  return items, users
+  return items, users, preds
 
 def plot_importance(featuer_names, feature_importances, ax):
   df = pd.DataFrame({'feature':featuer_names, 'importance': feature_importances})
