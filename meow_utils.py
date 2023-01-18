@@ -9,7 +9,7 @@ import seaborn as sns
 FEATURES = ['num_cosub',
             'coclick_sub_coef', 'cocart_sub_coef', 'coorder_sub_coef',
             'coclick_time_decay', 'cocart_time_decay', 'coorder_time_decay',
-            'num_appearance', 'num_in_k_most_recent_items']
+            'num_appearance', 'num_in_k_most_recent_items', 'num_happend_later', 'num_happend_before', 'happend_later_ratio']
 USER_FEATURES = ['num_sub', 'consistency', 'num_actions', 'degree', 'pr', 'recent_degree', 'recent_pr']
 
 
@@ -20,7 +20,7 @@ glob_features = ['item_glob_' + f for f in[
     'time_decay_sum_cart', 'time_decay_sum_order', 'item_glob_durability'
 ]]
 
-popular_features = ['popular_clicks', 'popular_carts', 'popular_orders', 'popular_num_appearance']
+
 
 
 lincom_features_name = []
@@ -90,9 +90,6 @@ for f in FEATURES + lincom_features_name:
 qou_features_name = []
 for  f in FEATURES:
   qou_features_name.append('qou_' + f + '_sqrt_num_cousers')
-
-# for  f in popular_features:
-#   qou_features_name.append('qou_' + f + '_sqrt_num_neighbourhood')
 
 
 level2_columns = ['item', 
