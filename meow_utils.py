@@ -9,7 +9,7 @@ import seaborn as sns
 FEATURES = ['num_cosub',
             'coclick_sub_coef', 'cocart_sub_coef', 'coorder_sub_coef',
             'coclick_time_decay', 'cocart_time_decay', 'coorder_time_decay',
-            'num_appearance', 'num_in_k_most_recent_items', 'num_happend_later', 'num_happend_before', 'happend_later_ratio']
+            'num_appearance', 'num_in_k_most_recent_items', 'num_happend_later', 'num_happend_before', 'happend_later_ratio', 'last_interact']
 USER_FEATURES = ['num_sub', 'consistency', 'num_actions', 'degree', 'pr', 'recent_degree', 'recent_pr']
 
 
