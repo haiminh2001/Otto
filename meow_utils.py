@@ -10,6 +10,16 @@ FEATURES = ['num_cosub',
             'coclick_sub_coef', 'cocart_sub_coef', 'coorder_sub_coef',
             'coclick_time_decay', 'cocart_time_decay', 'coorder_time_decay',
             'num_appearance', 'num_in_k_most_recent_items', 'num_happend_later', 'num_happend_before', 'happend_later_ratio', 'last_interact']
+
+cointeractions_coef_name = []
+cointeractions_time_decay_name = []
+for i in ['clicks', 'carts', 'orders']:
+  for j in ['clicks', 'carts', 'orders']:
+    cointeractions_coef_name.append(f'cointeractions_coef_{i}_{j}')
+    cointeractions_time_decay_name.append(f'cointeractions_time_decay_{i}_{j}')
+    
+FEATURES = [*FEATURES, * cointeractions_coef_name, *cointeractions_time_decay_name, 'cointeractions_sub_coef_sum', 'cointeractions_time_decay_sum']
+
 USER_FEATURES = ['num_sub', 'consistency', 'num_actions', 'degree', 'pr', 'recent_degree', 'recent_pr']
 
 
@@ -21,12 +31,7 @@ glob_features = ['item_glob_' + f for f in[
 ]]
 
 
-cointeractions_coef_name = []
-cointeractions_time_decay_name = []
-for i in ['clicks', 'carts', 'orders']:
-  for j in ['clicks', 'carts', 'orders']:
-    cointeractions_coef_name.append(f'cointeractions_coef_{i}_{j}')
-    cointeractions_time_decay_name.append(f'cointeractions_time_decay_{i}_{j}')
+
 
 lincom_features_name = []
 
@@ -92,18 +97,13 @@ norm_features_name = []
 for f in FEATURES + lincom_features_name:
   norm_features_name.append('qou_' + f + '_mean' )
 
-qou_features_name = []
-for  f in FEATURES:
-  qou_features_name.append('qou_' + f + '_sqrt_num_cousers')
 
 
 level2_columns = ['item', 
             *[f if f not in shared_features else 'item_' + f for f in ITEM_FEATURES],
             *norm_features_name,  
-            *qou_features_name,
             *[f if f not in shared_features else 'user_' + f for f in USER_FEATURES],
-            *cointeractions_coef_name,
-            *cointeractions_time_decay_name,
+            *FEATURES,
             ]
 
 level1_columns = [
