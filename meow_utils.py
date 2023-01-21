@@ -21,7 +21,12 @@ glob_features = ['item_glob_' + f for f in[
 ]]
 
 
-
+cointeractions_coef_name = []
+cointeractions_time_decay_name = []
+for i in ['clicks', 'carts', 'orders']:
+  for j in ['clicks', 'carts', 'orders']:
+    cointeractions_coef_name.append(f'cointeractions_coef_{i}_{j}')
+    cointeractions_time_decay_name.append(f'cointeractions_time_decay_{i}_{j}')
 
 lincom_features_name = []
 
@@ -97,6 +102,8 @@ level2_columns = ['item',
             *norm_features_name,  
             *qou_features_name,
             *[f if f not in shared_features else 'user_' + f for f in USER_FEATURES],
+            *cointeractions_coef_name,
+            *cointeractions_time_decay_name,
             ]
 
 level1_columns = [
