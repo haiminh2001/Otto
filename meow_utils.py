@@ -11,14 +11,10 @@ FEATURES = ['num_cosub',
             'coclick_time_decay', 'cocart_time_decay', 'coorder_time_decay',
             'num_appearance', 'num_in_k_most_recent_items', 'num_happend_later', 'num_happend_before', 'happend_later_ratio', 'last_interact']
 
-cointeractions_coef_name = []
-cointeractions_time_decay_name = []
-for i in ['clicks', 'carts', 'orders']:
-  for j in ['clicks', 'carts', 'orders']:
-    cointeractions_coef_name.append(f'cointeractions_coef_{i}_{j}')
-    cointeractions_time_decay_name.append(f'cointeractions_time_decay_{i}_{j}')
+
     
-FEATURES = [*FEATURES, * cointeractions_coef_name, *cointeractions_time_decay_name, 'cointeractions_sub_coef_sum', 'cointeractions_time_decay_sum']
+FEATURES = [*FEATURES, 'cointeractions_sub_coef_sum', 'cointeractions_time_decay_sum']
+
 
 USER_FEATURES = ['num_sub', 'consistency', 'num_actions', 'degree', 'pr', 'recent_degree', 'recent_pr']
 
@@ -53,7 +49,7 @@ for i in range(7,0,-1):
 
 ITEM_FEATURES = [*item_features, * recent_features, *glob_features]
 
-INTERACTION_FEATURES = ['inter_clicks', 'inter_carts', 'inter_orders', 'inter_num_sub', 'inter_time_decay', 'inter_lts', 'inter_fts', 'inter_durability', 'inter_num_interacts']
+INTERACTION_FEATURES = ['inter_clicks', 'inter_carts', 'inter_orders', 'inter_num_sub', 'inter_time_decay', 'inter_lts', 'inter_fts', 'inter_durability', 'inter_num_interacts', 'inter_chrono_order']
 
 
 
@@ -92,18 +88,21 @@ feature_id_map = {**feature_id_map, **recent_features_id_map, **glob_features_id
 
 
 
-norm_features_name = []
 
+aggs = ['sum', 'mean', 'max', 'min']
+agg_features_names = []
 for f in FEATURES + lincom_features_name:
-  norm_features_name.append('qou_' + f + '_mean' )
+  for agg in aggs:
+    agg_features_names.append('agg_' + f +'_' + agg)
 
 
 
 level2_columns = ['item', 
             *[f if f not in shared_features else 'item_' + f for f in ITEM_FEATURES],
-            *norm_features_name,  
-            *[f if f not in shared_features else 'user_' + f for f in USER_FEATURES],
             *FEATURES,
+            *lincom_features_name,  
+            *agg_features_names,
+            *[f if f not in shared_features else 'user_' + f for f in USER_FEATURES],
             ]
 
 level1_columns = [
