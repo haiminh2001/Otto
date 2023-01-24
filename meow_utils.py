@@ -40,7 +40,7 @@ for w1, w2, w3 in lincom_weights:
 
 recent_features = []
 
-for i in range(7,0,-1):
+for i in range(21,0,-1):
   for j in range(3):
       recent_features.append(f'recent_day{i}_type{j}')
       
